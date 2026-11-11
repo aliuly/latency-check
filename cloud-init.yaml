@@ -1,0 +1,44 @@
+#cloud-config
+users:
+- name: ${user}
+  groups: sudo
+  shell: /bin/bash
+  sudo: ['ALL=(ALL) NOPASSWD:ALL']
+  passwd: "${passwd}"
+  lock_passwd: false
+  ssh_authorized_keys:
+%{ for key in ssh_keys ~}
+  - "${key}"
+%{ endfor ~}
+
+
+#~ # This is not working!
+#~ package_update: true
+#~ packages:
+  #~ ...
+
+write_files:
+- path: /root/pkgs.txt
+  permissions: '0644'
+  content: |
+    - curl
+    - pwgen
+    - micro
+    - python3-venv
+    - zip
+    - dos2unix
+
+
+runcmd:
+- sed -i~ -e 's/^127\.0\.0\.1\s*.*$/127.0.0.1 localhost '$(uname -n)'/' /etc/hosts
+# We need to do this as cloud-init is ignore package installations
+- apt-get update -y
+- "DEBIAN_FRONTEND=noninteractive apt-get install -y $(sed -e 's/#.*//' -e 's/^ *- / /' /root/pkgs.txt)"
+- >
+    cd /usr/local &&
+    curl -k -O https://uniagent-eu-de.obs.eu-de.otc.t-systems.com/package/agent_install.sh &&
+    bash agent_install.sh
+    -r eu-de -u 0.1.9 -t 2.7.2
+    -o otc.t-systems.com
+    -d agent.ces.${region}.otc.t-systems.com
+
