@@ -1,0 +1,2 @@
+# latency-check
+VM deployments
